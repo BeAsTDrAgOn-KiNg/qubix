@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Individual operator credentials and visual preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Authenticating user identifier" },
+        "name": { "type": "string", "description": "User display name" },
+        "email": { "type": "string", "description": "Operator security contact address" },
+        "role": { "type": "string", "enum": ["client", "freelancer", "admin"], "description": "Desk role classification" },
+        "company": { "type": "string", "description": "Associated enterprise entity" },
+        "biography": { "type": "string", "description": "Sourcing and technology expertise timeline" },
+        "title": { "type": "string", "description": "Professional designation" },
+        "hourlyRate": { "type": "number", "description": "Current standard service fee rate" },
+        "skills": { "type": "string", "description": "Verified tech tags and tooling parameters" },
+        "payoutMethod": { "type": "string", "description": "Escrow routing settlement destination" },
+        "notifSetting": { "type": "boolean", "description": "System state updates switch preference" },
+        "autoApprove": { "type": "boolean", "description": "Automatic release indicator on milestone review" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Contract": {
+      "title": "Contract",
+      "description": "Milestone-backed contract parameters with active status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "System contract identity key" },
+        "title": { "type": "string", "description": "Scope of work engagement headline" },
+        "client": { "type": "string", "description": "Represented buyer identifier or name" },
+        "clientEmail": { "type": "string", "description": "Email address of the client in charge" },
+        "freelancer": { "type": "string", "description": "Represented developer identifier or name" },
+        "freelancerEmail": { "type": "string", "description": "Email address of the assigned developer" },
+        "avatar": { "type": "string", "description": "Active developer avatar representation" },
+        "budget": { "type": "number", "description": "Total funded budget under negotiation" },
+        "funded": { "type": "number", "description": "Currently deposited security buffer inside escrow" },
+        "released": { "type": "number", "description": "Dispersed funds already settled with builder" },
+        "currentMilestone": { "type": "string", "description": "Active milestone challenge definition" },
+        "progress": { "type": "number", "description": "Overall completed percentage gauge" },
+        "status": { "type": "string", "description": "Active settlement status parameter" },
+        "date": { "type": "string", "description": "Fulfillment date parameters" },
+        "rating": { "type": "number", "description": "Final work rating review score" },
+        "review": { "type": "string", "description": "Feedback statement logged by user" },
+        "isCompleted": { "type": "boolean", "description": "Has the contract reached a terminated state" }
+      },
+      "required": ["id", "title", "clientEmail", "freelancerEmail", "budget", "funded", "released", "status"]
+    },
+    "PaymentTrans": {
+      "title": "PaymentTrans",
+      "description": "Audit record of milestones settled and invoices issued",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique transaction key" },
+        "invoice": { "type": "string", "description": "Payment receipt metadata reference" },
+        "item": { "type": "string", "description": "Billing description label" },
+        "amount": { "type": "number", "description": "Amount settled under holding invoice" },
+        "date": { "type": "string", "description": "Timestamp settled or issued" },
+        "status": { "type": "string", "description": "Release state (e.g. Cleared, In Escrow)" },
+        "userEmail": { "type": "string", "description": "Email identifier of the transaction payee" }
+      },
+      "required": ["id", "invoice", "item", "amount", "date", "status", "userEmail"]
+    },
+    "ChatThread": {
+      "title": "ChatThread",
+      "description": "Security-isolated communication channel record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Thread identity tag" },
+        "participant": { "type": "string", "description": "Partner metadata overview" },
+        "clientEmail": { "type": "string", "description": "Client email in communication" },
+        "freelancerEmail": { "type": "string", "description": "Freelancer security email contact" },
+        "lastMsg": { "type": "string", "description": "Pre-compiled last active message" },
+        "unread": { "type": "boolean", "description": "New communication notification toggle" }
+      },
+      "required": ["id", "clientEmail", "freelancerEmail"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Individual communication log record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Individual message identifier" },
+        "sender": { "type": "string", "enum": ["me", "other", "user", "assistant"], "description": "Sending identity reference" },
+        "author": { "type": "string", "description": "The text name displayed next to bubble" },
+        "text": { "type": "string", "description": "Communication content text body" },
+        "time": { "type": "string", "description": "Fitted time representation" }
+      },
+      "required": ["id", "sender", "author", "text"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "All operator nodes data structures"
+    },
+    "contracts/{contractId}": {
+      "schema": "Contract",
+      "description": "Track ongoing, active, and settled project records"
+    },
+    "payments/{paymentId}": {
+      "schema": "PaymentTrans",
+      "description": "Audit references of finished or active milestone settlements"
+    },
+    "chats/{chatId}": {
+      "schema": "ChatThread",
+      "description": "Secure communication logging pathways"
+    },
+    "chats/{chatId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Specific timeline responses within active conversations"
+    }
+  }
+}

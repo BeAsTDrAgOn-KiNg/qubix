@@ -1,0 +1,6 @@
+{
+  "name": "QUBIX: Simply Smarter",
+  "description": "Simplified, ultra-clean portfolio database for QUBIX - Simply Smarter. Minimalist showcase of customized analytics pipelines and lightweight business software platforms for local brands.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

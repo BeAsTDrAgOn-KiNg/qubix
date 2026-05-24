@@ -1,0 +1,251 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global safety catch-all: Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- reusable hardened helper primitives ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      // Allow verified emails (such as Google Sign-in) or standard secure auth providers
+      return isSignedIn() && (
+        request.auth.token.email_verified == true || 
+        request.auth.token.firebase.sign_in_provider == 'password'
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validation Blueprints (Anti-Update-Gaps) ---
+
+    // 1. User Entity Validation
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() <= 128 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.role is string && (data.role == 'client' || data.role == 'freelancer' || data.role == 'admin') &&
+             (!('name' in data) || (data.name is string && data.name.size() <= 150)) &&
+             (!('company' in data) || (data.company is string && data.company.size() <= 200)) &&
+             (!('biography' in data) || (data.biography is string && data.biography.size() <= 1000)) &&
+             (!('title' in data) || (data.title is string && data.title.size() <= 150)) &&
+             (!('skills' in data) || (data.skills is string && data.skills.size() <= 500)) &&
+             (!('payoutMethod' in data) || (data.payoutMethod is string && data.payoutMethod.size() <= 200)) &&
+             (!('hourlyRate' in data) || (data.hourlyRate is number && data.hourlyRate >= 0)) &&
+             (!('notifSetting' in data) || (data.notifSetting is bool)) &&
+             (!('autoApprove' in data) || (data.autoApprove is bool));
+    }
+
+    // 2. Contract Entity Validation
+    function isValidContract(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() <= 200 &&
+             data.clientEmail is string && data.clientEmail.size() <= 150 &&
+             data.freelancerEmail is string && data.freelancerEmail.size() <= 150 &&
+             data.budget is number && data.budget >= 0 &&
+             data.funded is number && data.funded >= 0 &&
+             data.released is number && data.released >= 0 &&
+             data.status is string && data.status.size() <= 50 &&
+             (!('client' in data) || (data.client is string && data.client.size() <= 150)) &&
+             (!('freelancer' in data) || (data.freelancer is string && data.freelancer.size() <= 150)) &&
+             (!('avatar' in data) || (data.avatar is string && data.avatar.size() <= 500)) &&
+             (!('currentMilestone' in data) || (data.currentMilestone is string && data.currentMilestone.size() <= 500)) &&
+             (!('progress' in data) || (data.progress is number && data.progress >= 0 && data.progress <= 100)) &&
+             (!('date' in data) || (data.date is string && data.date.size() <= 150)) &&
+             (!('rating' in data) || (data.rating is number && data.rating >= 0 && data.rating <= 5)) &&
+             (!('review' in data) || (data.review is string && data.review.size() <= 2000)) &&
+             (!('isCompleted' in data) || (data.isCompleted is bool));
+    }
+
+    // 3. Payment Trans Entity Validation
+    function isValidPayment(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.invoice is string && data.invoice.size() <= 100 &&
+             data.item is string && data.item.size() <= 300 &&
+             data.amount is number && data.amount >= 0 &&
+             data.date is string && data.date.size() <= 100 &&
+             data.status is string && data.status.size() <= 100 &&
+             data.userEmail is string && data.userEmail.size() <= 150;
+    }
+
+    // 4. Chat Thread Entity Validation
+    function isValidChatThread(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.clientEmail is string && data.clientEmail.size() <= 150 &&
+             data.freelancerEmail is string && data.freelancerEmail.size() <= 150 &&
+             (!('participant' in data) || (data.participant is string && data.participant.size() <= 150)) &&
+             (!('lastMsg' in data) || (data.lastMsg is string && data.lastMsg.size() <= 1000)) &&
+             (!('unread' in data) || (data.unread is bool));
+    }
+
+    // 5. Chat Message Entity Validation
+    function isValidChatMessage(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.sender is string && (data.sender == 'me' || data.sender == 'other' || data.sender == 'user' || data.sender == 'assistant') &&
+             data.author is string && data.author.size() <= 150 &&
+             data.text is string && data.text.size() <= 2000 &&
+             (!('time' in data) || (data.time is string && data.time.size() <= 100));
+    }
+
+    // --- Collection matching rules ---
+
+    // users collection
+    match /users/{userId} {
+      allow get: if isEmailVerified() && (userId == request.auth.uid || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      
+      allow list: if isEmailVerified() && (
+        resource == null || 
+        resource.data.email == request.auth.token.email || 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+
+      // Create configuration checks
+      allow create: if isEmailVerified() && 
+                    isValidId(userId) && 
+                    userId == request.auth.uid && 
+                    isValidUser(incoming()) &&
+                    incoming().email == request.auth.token.email &&
+                    incoming().role != 'admin'; // Forbid self-assigning admin role upon signup
+
+      // Update constraints
+      allow update: if isEmailVerified() && 
+                    userId == request.auth.uid && 
+                    isValidUser(incoming()) &&
+                    incoming().email == existing().email && // email immutable
+                    incoming().role == existing().role &&  // role immutable
+                    incoming().diff(existing()).affectedKeys().hasOnly([
+                      'name', 'company', 'biography', 'title', 'skills', 'hourlyRate', 'payoutMethod', 'notifSetting', 'autoApprove'
+                    ]);
+      
+      // Admin override escape hatches
+      allow write: if isEmailVerified() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // contracts collection
+    match /contracts/{contractId} {
+      // Secure listing queries to prevent blanket queries
+      allow list: if isEmailVerified() && (
+        resource.data.clientEmail == request.auth.token.email || 
+        resource.data.freelancerEmail == request.auth.token.email ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+
+      allow get: if isEmailVerified() && (
+        resource.data.clientEmail == request.auth.token.email || 
+        resource.data.freelancerEmail == request.auth.token.email ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+
+      allow create: if isEmailVerified() && 
+                    isValidId(contractId) && 
+                    isValidContract(incoming()) && (
+                      incoming().clientEmail == request.auth.token.email || 
+                      incoming().freelancerEmail == request.auth.token.email ||
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                    );
+
+      allow update: if isEmailVerified() && 
+                    isValidContract(incoming()) && (
+                      // Must be client or freelancer related to contract
+                      existing().clientEmail == request.auth.token.email || 
+                      existing().freelancerEmail == request.auth.token.email ||
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                    ) && (
+                      // Don't let users edit administrative identifier keys
+                      incoming().id == existing().id &&
+                      incoming().clientEmail == existing().clientEmail &&
+                      incoming().freelancerEmail == existing().freelancerEmail &&
+                      // Limit non-admin client/freelancer update actions
+                      (
+                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+                        // Client releasing funds or setting progress
+                        incoming().diff(existing()).affectedKeys().hasOnly([
+                          'progress', 'status', 'released', 'funded', 'currentMilestone', 'rating', 'review', 'isCompleted'
+                        ])
+                      )
+                    );
+
+      allow delete: if isEmailVerified() && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // payments collection
+    match /payments/{paymentId} {
+      allow list, get: if isEmailVerified() && (
+        resource.data.userEmail == request.auth.token.email ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+
+      allow create: if isEmailVerified() && 
+                    isValidId(paymentId) && 
+                    isValidPayment(incoming()) && (
+                      incoming().userEmail == request.auth.token.email ||
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                    );
+
+      allow update: if isEmailVerified() && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+
+      allow delete: if isEmailVerified() && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // chats collection
+    match /chats/{chatId} {
+      allow list, get: if isEmailVerified() && (
+        resource.data.clientEmail == request.auth.token.email || 
+        resource.data.freelancerEmail == request.auth.token.email ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+
+      allow create: if isEmailVerified() && 
+                    isValidId(chatId) && 
+                    isValidChatThread(incoming()) && (
+                      incoming().clientEmail == request.auth.token.email || 
+                      incoming().freelancerEmail == request.auth.token.email ||
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                    );
+
+      allow update: if isEmailVerified() && 
+                    isValidChatThread(incoming()) && (
+                      existing().clientEmail == request.auth.token.email || 
+                      existing().freelancerEmail == request.auth.token.email ||
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                    );
+
+      // nested communication messages
+      match /messages/{messageId} {
+        allow get, list: if isEmailVerified() && (
+          get(/databases/$(database)/documents/chats/$(chatId)).data.clientEmail == request.auth.token.email ||
+          get(/databases/$(database)/documents/chats/$(chatId)).data.freelancerEmail == request.auth.token.email ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        );
+
+        allow create: if isEmailVerified() &&
+                      isValidId(messageId) &&
+                      isValidChatMessage(incoming()) && (
+                        get(/databases/$(database)/documents/chats/$(chatId)).data.clientEmail == request.auth.token.email ||
+                        get(/databases/$(database)/documents/chats/$(chatId)).data.freelancerEmail == request.auth.token.email ||
+                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+                      );
+
+        allow update, delete: if isEmailVerified() &&
+                              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      }
+    }
+  }
+}
