@@ -539,11 +539,11 @@ void main(void) {
 		uv+=.1*cos(i*vec2(.1+.01*i, .8)+i*i+T*.3+.1*uv.x);
 		vec2 p=uv;
 		float d=length(p);
-		// Multiply colors specifically with Qubix signature gold and soft amber elements
-		col+=.00125/d*(cos(sin(i)*vec3(2.0, 1.4, 0.4))+1.0) * vec3(0.83, 0.69, 0.22);
+		// Multiply colors specifically with Qubix signature sky blue and soft cyan elements
+		col+=.00125/d*(cos(sin(i)*vec3(2.0, 1.4, 0.4))+1.0) * vec3(0.12, 0.58, 0.94);
 		float b=noise(i+p+bg*1.731);
-		col+=.002*b/length(max(p,vec2(b*p.x*.02,p.y))) * vec3(0.9, 0.75, 0.3);
-		col=mix(col,vec3(bg*.38,bg*.31,bg*.10),d);
+		col+=.002*b/length(max(p,vec2(b*p.x*.02,p.y))) * vec3(0.24, 0.68, 0.95);
+		col=mix(col,vec3(bg*.10,bg*.26,bg*.46),d);
 	}
 	O=vec4(col,1);
 }`;

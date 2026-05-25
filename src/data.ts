@@ -26,8 +26,8 @@ export const PORTFOLIO_PROJECTS: ProjectResult[] = [
     category: 'Local Fast Casual Eatery',
     description: 'Crafted simple web presence solutions and local discoverability strategies to anchor the neighborhood brand online. Built frictionless local menus and clean contact routes for regular diner traffic.',
     metrics: [],
-    imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=800&auto=format&fit=crop',
-    tags: ['Digital Discovery', 'Web Presence', 'Local SEO']
+    imageUrl: 'https://images.unsplash.com/photo-1521305916504-4a1121188589?q=80&w=800&auto=format&fit=crop',
+    tags: ['Digital Discovery', 'Web Presence', 'Search Strategy']
   },
   {
     id: 'p-4',
@@ -35,7 +35,7 @@ export const PORTFOLIO_PROJECTS: ProjectResult[] = [
     category: 'Retail Fashion Boutique',
     description: 'Designed a highly visual digital storefront and catalog layout system for local inventory tracking. Crafted a clean browsing interface to align the boutique brand with its premium audience.',
     metrics: [],
-    imageUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=800&auto=format&fit=crop',
+    imageUrl: 'https://images.unsplash.com/photo-1608748347097-9f945f6255a6?q=80&w=800&auto=format&fit=crop',
     tags: ['Storefront Design', 'Catalog Indexing', 'Brand Alignment']
   },
   {
@@ -50,29 +50,11 @@ export const PORTFOLIO_PROJECTS: ProjectResult[] = [
   {
     id: 'p-6',
     title: 'Anand Associates',
-    category: 'Management & Financial Consultants',
-    description: 'Developed a custom workflow automation engine and a clean client portal dashboard. Instantly updates client banking files and synchronizes active pipelines for direct document tracking.',
+    category: 'Financial Advisor & Tax Consultants',
+    description: 'Engineered a secure client portal and custom document-submission pipeline for direct tax filing and portfolio tracking. Developed a centralized tracker allowing business owners and individuals to monitor tax calculations, compliance status, and active advisory workflows securely.',
     metrics: [],
     imageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop',
-    tags: ['Workflow Automation', 'Dashboard', 'Records Tracking']
-  },
-  {
-    id: 'p-7',
-    title: 'Gold Price Forecasting & Risk Analysis Platform',
-    category: 'Python Data Science Asset',
-    description: 'A Python time-series framework built to parse historical asset values, map trend trajectories up to one year using linear regression models, and calculate core risk parameters including Volatility and Value at Risk (VaR).',
-    metrics: [],
-    imageUrl: 'https://images.unsplash.com/photo-1610375228911-2fefdf1ca275?q=80&w=800&auto=format&fit=crop',
-    tags: ['Time-Series Models', 'Linear Regression', 'Value at Risk']
-  },
-  {
-    id: 'p-8',
-    title: 'Natural Gas Forecasting & Storage Valuation Engine',
-    category: 'Computational Data Science Lab',
-    description: 'An analytical model simulating and forecasting seasonal fuel pricing patterns over a 12-month rolling horizon utilizing a 4th-degree Polynomial Regression script and storage schedule simulators.',
-    metrics: [],
-    imageUrl: 'https://images.unsplash.com/photo-1542060748-10c28b629f6f?q=80&w=800&auto=format&fit=crop',
-    tags: ['Polynomial Regression', 'Seasonal Cycles', 'Contract Valuations']
+    tags: ['Financial Advisory', 'Tax Compliance', 'Secure Portal']
   }
 ];
 
